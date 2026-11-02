@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Daily Brief</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+  @font-face { font-family: Script; src: url(fonts/great_vibes.ttf); font-display: swap; }
+  @font-face { font-family: Mont; src: url(fonts/montserrat_regular.ttf); font-display: swap; }
+  @font-face { font-family: Mont; font-weight: 900; src: url(fonts/montserrat_heavy.ttf); font-display: swap; }
+  :root { --fg: #fff; --dim: rgba(255,255,255,.72); --faint: rgba(255,255,255,.4); --bg: #000; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--fg); font-family: Mont, system-ui, sans-serif; overflow: hidden; }
+  a { color: inherit; text-decoration: none; }
+
+  /* Pages are stacked. A turn peels the page from its corner: the page is clipped at the fold line, and a mirrored
+     copy of it (the "flap", the back of the paper) is laid over the fold, so the corner follows your finger. */
+  #deck { position: relative; height: 100dvh; overflow: hidden; touch-action: pan-y; user-select: none; }
+  .card { position: absolute; inset: 0; overflow: hidden; background: var(--bg);
+    display: flex; flex-direction: column; justify-content: flex-end; padding: 0 max(28px, 8vw) max(72px, 12dvh); }
+  .card > * { position: relative; max-width: 34rem; }
+  #crease, #flaps { position: fixed; inset: 0; pointer-events: none; display: none; }
+  #crease { z-index: 2; }
+  #flaps { z-index: 4; filter: drop-shadow(-8px 4px 16px rgba(0,0,0,.6)); }
+  #flaps .card { transform-origin: 0 0; }
+  .paper { position: absolute; inset: 0; max-width: none; }
+  .bg { position: absolute; inset: 0; max-width: none; background: center / cover no-repeat; filter: grayscale(1) contrast(1.05) brightness(.55); transform: scale(1.06); }
+  .bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, #000 22%, rgba(0,0,0,.55) 60%, rgba(0,0,0,.25)); }
+
+  .kicker { font-weight: 900; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--faint); margin-bottom: 18px; }
+  h1 { font-weight: 900; text-transform: uppercase; font-size: clamp(30px, 8.4vw, 58px); line-height: 1.02; letter-spacing: -.01em; text-wrap: balance; }
+  .sum { font-size: clamp(16px, 4.3vw, 20px); line-height: 1.5; color: var(--dim); margin-top: 22px; text-wrap: pretty; }
+  .src { margin-top: 26px; font-size: 13px; letter-spacing: .08em; color: var(--fg); display: inline-flex; gap: .5em; border-bottom: 1px solid var(--faint); padding-bottom: 3px; align-self: flex-start; }
+
+  .script { font-family: Script, cursive; font-weight: 400; text-transform: none; letter-spacing: 0; }
+  .cover { justify-content: center; }
+  .cover .script { font-size: clamp(72px, 22vw, 132px); line-height: .9; }
+  .cover h1 { font-size: clamp(26px, 7vw, 44px); margin-top: 6px; letter-spacing: .04em; }
+  .cover .sum { color: var(--faint); font-size: 14px; letter-spacing: .14em; text-transform: uppercase; }
+  .quote { justify-content: center; text-align: center; align-items: center; }
+  .quote blockquote { font-family: Script, cursive; font-size: clamp(40px, 11vw, 68px); line-height: 1.12; text-wrap: balance; }
+  .quote .sum { font-size: 12px; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; color: var(--faint); }
+  .end { justify-content: center; align-items: center; text-align: center; }
+  .end .script { font-size: clamp(64px, 18vw, 112px); }
+
+  #bars { position: fixed; top: calc(env(safe-area-inset-top) + 14px); left: max(16px, 4vw); right: max(16px, 4vw); display: flex; gap: 4px; z-index: 10; pointer-events: none; }
+  #bars i { flex: 1; height: 2px; border-radius: 1px; background: rgba(255,255,255,.22); transition: background .25s; }
+  #bars i.on { background: #fff; }
+  #msg { position: fixed; inset: 0; display: grid; place-items: center; color: var(--faint); letter-spacing: .2em; font-size: 12px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="bars"></div>
+<main id="deck"></main>
+<div id="crease"></div>
+<div id="flaps"></div>
+<div id="msg">Loading</div>
+<script>
+const LABEL = { ai: "Artificial intelligence", world: "World", long: "The long read", good: "Good news" };
+const esc = (s = "") => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const deck = document.getElementById("deck"), bars = document.getElementById("bars");
+
+function render(ed) {
+  const d = new Date(ed.date);
+  const words = ed.cards.reduce((n, c) => n + (c.headline + " " + c.summary).split(" ").length, 0);
+  const html = [`<section class="card cover">
+      <div class="script">${d.toLocaleDateString("en-US", { weekday: "long" })}</div>
+      <h1>${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })} · ${d.getFullYear()}</h1>
+      <p class="sum">${ed.cards.length} stories · ${Math.max(1, Math.round(words / 200))} min · turn the page</p></section>`];
+  ed.cards.forEach((c, i) => {
+    const n = ed.cards.filter((x) => x.section === c.section), k = n.indexOf(c) + 1;
+    html.push(`<section class="card">
+      ${c.image ? `<div class="bg" style="background-image:url('${esc(c.image)}')"></div>` : ""}
+      <div class="kicker">${LABEL[c.section] || c.section}${n.length > 1 ? ` · ${k} of ${n.length}` : ""}</div>
+      <a href="${esc(c.link)}" target="_blank" rel="noopener"><h1>${esc(c.headline)}</h1></a>
+      <p class="sum">${esc(c.summary)}</p>
+      <a class="src" href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.source)} <span>↗</span></a></section>`);
+  });
+  if (ed.quote) html.push(`<section class="card quote">
+      <blockquote>“${esc(ed.quote.text)}”</blockquote>
+      <p class="sum">${esc(ed.quote.author)}${ed.quote.work ? ` · ${esc(ed.quote.work)}` : ""}</p></section>`);
+  html.push(`<section class="card end"><div class="script">That's today.</div><p class="sum" style="color:var(--faint)">New edition tomorrow morning</p></section>`);
+  deck.innerHTML = html.join("");
+  bars.innerHTML = "<i></i>".repeat(deck.children.length);
+  document.getElementById("msg").remove();
+
+  pages = [...deck.children];
+  // Resume where you left off in this edition.
+  key = "pos:" + ed.date;
+  try { at = Math.min(+localStorage.getItem(key) || 0, pages.length - 1); } catch {}
+  place();
+}
+
+let pages = [], at = 0, key = "", ts = null, animating = false;
+const crease = document.getElementById("crease"), flaps = document.getElementById("flaps");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Only the current page is shown; everything else waits hidden.
+function place() {
+  pages.forEach((c, k) => {
+    c.style.zIndex = k === at ? 3 : 1;
+    c.style.visibility = k === at ? "" : "hidden";
+    c.style.clipPath = "";
+  });
+  crease.style.display = flaps.style.display = "none";
+  flaps.replaceChildren();
+  [...bars.children].forEach((b, i) => b.classList.toggle("on", i <= at));
+  try { localStorage.setItem(key, at); } catch {}
+}
+
+// The part of the w×h page on one side of the line through M with normal n (side = 1: the side n points to).
+function cut(w, h, M, n, side) {
+  const pts = [[0, 0], [w, 0], [w, h], [0, h]], out = [];
+  const d = (q) => side * ((q[0] - M[0]) * n[0] + (q[1] - M[1]) * n[1]);
+  pts.forEach((q, i) => {
+    const r = pts[(i + 1) % 4], dq = d(q), dr = d(r);
+    if (dq >= 0) out.push(q);
+    if ((dq >= 0) !== (dr >= 0)) { const t = dq / (dq - dr); out.push([q[0] + t * (r[0] - q[0]), q[1] + t * (r[1] - q[1])]); }
+  });
+  return `polygon(${out.map((q) => `${q[0].toFixed(1)}px ${q[1].toFixed(1)}px`).join(",") || "0 0"})`;
+}
+
+// Start a turn. dir 1 peels the current page off; dir -1 lays the previous page back down over it.
+function begin(dir, y) {
+  const h = deck.clientHeight, top = pages[dir > 0 ? at : at - 1], under = pages[dir > 0 ? at + 1 : at];
+  pages.forEach((c) => (c.style.visibility = "hidden"));
+  Object.assign(under.style, { visibility: "", zIndex: 1, clipPath: "" });
+  Object.assign(top.style, { visibility: "", zIndex: 3 });
+  const flap = top.cloneNode(true);
+  flap.style.clipPath = ""; flap.style.zIndex = "";
+  flap.append(Object.assign(document.createElement("div"), { className: "paper" }));
+  flaps.replaceChildren(flap);
+  crease.style.display = flaps.style.display = "block";
+  const bottom = y > h / 2;
+  ts = { dir, top, flap, paper: flap.lastChild, cy: bottom ? h : 0, lift: bottom ? 1 : -1, p: dir > 0 ? 0 : 1, off: 0 };
+  draw();
+}
+
+// p is how far the turn has gone (0 flat, 1 fully over); off is the finger's vertical pull on the corner.
+function draw() {
+  const w = deck.clientWidth, h = deck.clientHeight, { p, off, cy, lift } = ts;
+  const C = [w, cy];
+  // The corner travels to the far side of the spine, rising in an arc so the fold runs on a diagonal like real paper.
+  let F = [w - 2 * w * p, cy + off - lift * 0.2 * h * Math.sin(Math.PI * Math.min(1, p))];
+  // Paper is attached at the spine: the corner can't get further from either spine end than the page allows.
+  for (const [S, r] of [[[0, cy], w], [[0, h - cy], Math.hypot(w, h)]]) {
+    const dx = F[0] - S[0], dy = F[1] - S[1], dist = Math.hypot(dx, dy);
+    if (dist > r) F = [S[0] + (dx * r) / dist, S[1] + (dy * r) / dist];
+  }
+  const v = [C[0] - F[0], C[1] - F[1]], len = Math.hypot(...v);
+  if (len < 1) { ts.top.style.clipPath = ""; flaps.style.opacity = 0; return; }
+  flaps.style.opacity = 1;
+  const n = [v[0] / len, v[1] / len], M = [(C[0] + F[0]) / 2, (C[1] + F[1]) / 2], m = M[0] * n[0] + M[1] * n[1];
+  ts.top.style.clipPath = cut(w, h, M, n, -1);
+  ts.flap.style.clipPath = cut(w, h, M, n, 1);
+  // Mirror the page across the fold line: that is the back of the paper, lying over the page.
+  const a = 1 - 2 * n[0] * n[0], b = -2 * n[0] * n[1], d = 1 - 2 * n[1] * n[1];
+  ts.flap.style.transform = `matrix(${a},${b},${b},${d},${2 * m * n[0]},${2 * m * n[1]})`;
+  // Light: a bright crease at the fold, the paper darkening toward its corner, and a shadow the flap casts on the next page.
+  const deg = (Math.atan2(n[0], -n[1]) * 180) / Math.PI, L = w * Math.abs(n[0]) + h * Math.abs(n[1]);
+  const s = (M[0] - w / 2) * n[0] + (M[1] - h / 2) * n[1] + L / 2, depth = len / 2;
+  ts.paper.style.background = `linear-gradient(${deg}deg, rgba(150,150,156,.9) ${s}px, rgba(70,70,76,.88) ${s + Math.min(26, depth * 0.2)}px,
+    rgba(30,30,33,.9) ${s + depth * 0.65}px, rgba(14,14,16,.94) ${s + depth}px)`;
+  crease.style.background = `linear-gradient(${deg}deg, transparent ${s}px, rgba(0,0,0,.8) ${s}px, transparent ${s + Math.min(110, depth * 0.8)}px)`;
+}
+
+// Ease the turn to p = to, letting go of any vertical pull on the way.
+function glide(to, done) {
+  const p0 = ts.p, off0 = ts.off, ms = reduced ? 0 : 160 + 520 * Math.abs(to - p0), t0 = performance.now();
+  animating = true;
+  (function step(now) {
+    const k = ms ? Math.min(1, (now - t0) / ms) : 1, e = 1 - (1 - k) ** 3;
+    ts.p = p0 + (to - p0) * e; ts.off = off0 * (1 - e); draw();
+    if (k < 1) requestAnimationFrame(step);
+    else { animating = false; done(); }
+  })(t0);
+}
+
+function settle(done) {
+  const { dir } = ts;
+  glide(dir > 0 === done ? 1 : 0, () => { if (done) at += dir; ts = null; place(); });
+}
+
+function turn(dir) {
+  if (ts || !pages[dir > 0 ? at + 1 : at - 1]) return;
+  begin(dir, deck.clientHeight * 0.85);
+  settle(true);
+}
+
+// Drag: the page corner follows your finger; let go past a fifth of the way (or flick) and the page turns.
+let drag = null, moved = false;
+deck.addEventListener("pointerdown", (e) => {
+  if (animating || ts) return;
+  drag = { x: e.clientX, y: e.clientY, lx: e.clientX, lt: e.timeStamp, vx: 0, dir: 0 };
+  moved = false;
+});
+deck.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y, w = deck.clientWidth;
+  if (!drag.dir) {
+    if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+    drag.dir = dx < 0 ? 1 : -1;
+    if (!pages[drag.dir > 0 ? at + 1 : at - 1]) { drag = null; return; }
+    moved = true;
+    deck.setPointerCapture(e.pointerId);
+    begin(drag.dir, drag.y);
+  }
+  if (e.timeStamp > drag.lt) { drag.vx = (e.clientX - drag.lx) / (e.timeStamp - drag.lt); drag.lx = e.clientX; drag.lt = e.timeStamp; }
+  ts.p = Math.min(1, Math.max(0, drag.dir > 0 ? -dx / (2 * w) : 1 - dx / w));
+  ts.off = dy;
+  draw();
+});
+const release = () => {
+  if (drag?.dir && ts) settle(drag.dir > 0 ? ts.p > 0.2 || drag.vx < -0.5 : ts.p < 0.8 || drag.vx > 0.5);
+  drag = null;
+};
+deck.addEventListener("pointerup", release);
+deck.addEventListener("pointercancel", release);
+deck.addEventListener("click", (e) => {
+  if (moved) { e.preventDefault(); return; } // a drag that ended on a link is not a tap
+  if (!e.target.closest("a")) turn(e.clientX < innerWidth / 3 ? -1 : 1);
+}, true);
+addEventListener("keydown", (e) => { if (e.key === "ArrowRight") turn(1); if (e.key === "ArrowLeft") turn(-1); });
+
+fetch("edition.json", { cache: "no-cache" }).then((r) => r.json()).then(render)
+  .catch(() => (document.getElementById("msg").textContent = "No edition yet"));
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>

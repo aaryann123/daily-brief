@@ -1,0 +1,6 @@
+{
+  "name": "daily-brief",
+  // Account comes from CLOUDFLARE_ACCOUNT_ID in .env (see .env.example), so a deploy lands where you pin it.
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./public" }
+}

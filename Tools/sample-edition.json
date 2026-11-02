@@ -1,0 +1,76 @@
+{
+  "date": "2026-11-02T11:30:00.000Z",
+  "cards": [
+    {
+      "section": "ai",
+      "headline": "Open model matches frontier on maths benchmarks",
+      "summary": "A fictional lab released open weights for a model that scores within two points of closed systems on competition maths. It narrows the gap between open and closed models for reasoning tasks.",
+      "source": "example.com",
+      "link": "https://example.com/ai-1"
+    },
+    {
+      "section": "ai",
+      "headline": "Regulators publish draft rules for AI audits",
+      "summary": "A made-up agency proposed yearly third-party audits for large models used in hiring and lending. Companies would have to publish test results and fix flagged bias within 90 days.",
+      "source": "example.org",
+      "link": "https://example.org/ai-2"
+    },
+    {
+      "section": "ai",
+      "headline": "Chipmaker doubles inference capacity with new fab",
+      "summary": "A sample chip company said its new plant will double output of inference accelerators next year. Cheaper inference is what lets smaller teams ship AI features.",
+      "source": "example.net",
+      "link": "https://example.net/ai-3"
+    },
+    {
+      "section": "ai",
+      "headline": "Hospitals trial AI notes with patient consent",
+      "summary": "Three fictional hospitals began a six-month trial of AI-drafted visit notes that patients can opt out of. Doctors review every note before it enters the record.",
+      "source": "example.com",
+      "link": "https://example.com/ai-4"
+    },
+    {
+      "section": "world",
+      "headline": "River treaty signed after decade of talks",
+      "summary": "Two invented countries agreed to share water from a border river, with a joint body setting seasonal quotas. The deal ends a dispute that had stalled farming on both banks.",
+      "source": "example.org",
+      "link": "https://example.org/world-1"
+    },
+    {
+      "section": "world",
+      "headline": "Coastal city opens its first metro line",
+      "summary": "A sample city opened 14 km of driverless metro linking the port to the airport. Officials expect it to take 60,000 cars a day off the coast road.",
+      "source": "example.net",
+      "link": "https://example.net/world-2"
+    },
+    {
+      "section": "world",
+      "headline": "Election turnout hits a twenty-year high",
+      "summary": "Turnout in a fictional national election reached 78 percent, driven by first-time voters. Results are due on Thursday after postal ballots are counted.",
+      "source": "example.com",
+      "link": "https://example.com/world-3"
+    },
+    {
+      "section": "world",
+      "headline": "Wheat harvest beats forecasts despite dry spring",
+      "summary": "A made-up farm ministry reported a harvest 9 percent above forecast thanks to late rain. Bread prices, which rose sharply last year, are expected to ease.",
+      "source": "example.org",
+      "link": "https://example.org/world-4"
+    },
+    {
+      "section": "long",
+      "headline": "The quiet craft of mapping the sea floor",
+      "summary": "An essay follows a survey ship charting a ridge nobody has seen. Most of the ocean floor is still mapped more coarsely than the surface of Mars.",
+      "source": "example.net",
+      "link": "https://example.net/long-1"
+    },
+    {
+      "section": "good",
+      "headline": "Volunteers bring a lost orchard back to fruit",
+      "summary": "A village replanted 200 heritage apple trees from cuttings kept by one grower. The first harvest went to the school kitchen.",
+      "source": "example.com",
+      "link": "https://example.com/good-1"
+    }
+  ],
+  "quote": { "text": "Sample quote text, set by the editor each morning.", "author": "Daily Brief", "work": "" }
+}

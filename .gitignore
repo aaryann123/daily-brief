@@ -1,0 +1,7 @@
+node_modules/
+.wrangler/
+.env*
+!.env.example
+.DS_Store
+# Built each morning by build.mjs from live feeds; Tools/sample-edition.json is the committed stand-in.
+public/edition.json
